@@ -1,4 +1,8 @@
-This is a sample code to show how hmac and AES encryption work
+This is a sample code to show how hmac and AES encryption work.
+
+This code uses bouncy castle which can be downloaded from:
+ * http://www.bouncycastle.org/latest_releases.html
+ * Note: You need to get bcprov-jdk15on-147.jar
 
 Logic: CipherText = IV:E_k1{M|HMAC_k2{M}}
      Encryption Scheme is AES with CTR mode
