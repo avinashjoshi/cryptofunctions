@@ -1,0 +1,171 @@
+
+import java.security.*;
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import sun.misc.BASE64Encoder;
+
+/**
+ * This class has all Crypto tools needed by the application.
+ * 
+ * @author Avinash Joshi <avinash.joshi@utdallas.edu>
+ */
+public class Crypto {
+
+    /**
+     * This is the main function being called
+     *
+     * @param receivedText is the text to be encrypted or decrypted
+     * @param key is the private key that is used for encryption or decryption
+     * @param mode is either 'E' for Encryption or 'D' for decryption
+     * @return Returns the encrypted or decrypted string. Returns null if the
+     * encryption or decryption is not successful
+     * @throws NoSuchAlgorithmException
+     * @throws Exception
+     */
+    public static String doEncryptDecrypt(String receivedText, String key, char mode) throws NoSuchAlgorithmException, Exception {
+        String keyHash = Utils.SHA256String(key);
+        String aesKey = keyHash.substring(0, keyHash.length() / 2);
+        String hmacKey = keyHash.substring(keyHash.length() / 2);
+        StringBuilder encText = new StringBuilder();
+        String returnString = null;
+
+        if (mode == 'E') {
+            String hash = Crypto.genHash(receivedText.getBytes("ASCII"), hmacKey);
+            encText.append(receivedText);
+            encText.append(hash);
+            returnString = encrypt(encText.toString(), aesKey);
+        } else if (mode == 'D') {
+            String decText = decrypt(receivedText, aesKey);
+            String oldHash = decText.substring(decText.length() - 44, decText.length());
+            String plainText = decText.substring(0, decText.length() - 44);
+            String newHash = Crypto.genHash(plainText.getBytes("ASCII"), hmacKey);
+
+            if (oldHash.equals(newHash)) {
+                //System.out.println("Hash verified");
+                returnString = plainText;
+            } else {
+                //System.out.println("Hash not verified");
+                returnString = null;
+            }
+        }
+        return returnString;
+    }
+
+    /**
+     * This is the main encryption function
+     *
+     * @param plainText is the plain text that has to be encrypted
+     * @param plainKey is the key with which plainText has to be encrypted
+     * @return Returns the encrypted String
+     * @throws Exception
+     */
+    private static String encrypt(String plainText, String plainKey) throws Exception {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        SecureRandom random = new SecureRandom();
+        IvParameterSpec ivSpec = Utils.createCtrIvForAES(1, random);
+        Key cipherKey = Utils.createKeyForAES(256, plainKey);
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
+
+        // Encryption step starts here
+        ivSpec = new IvParameterSpec(ivSpec.getIV());
+        cipher.init(Cipher.ENCRYPT_MODE, cipherKey, ivSpec);
+
+        String finalCipherB64;
+
+        byte[] cipherText = new byte[cipher.getOutputSize(plainText.length())];
+
+        int ctLength = cipher.update(Utils.toByteArray(plainText), 0, plainText.length(), cipherText, 0);
+
+        ctLength += cipher.doFinal(cipherText, ctLength);
+
+        /*
+         * We could make plaintext to Hex finalCipherHex =
+         * Utils.toHex(ivSpec.getIV()) + ":" + Utils.toHex(cipherText);
+         */
+        finalCipherB64 = Utils.base64Encrypt(ivSpec.getIV()) + ":" + Utils.base64Encrypt(cipherText);
+
+        return finalCipherB64;
+    }
+
+    /**
+     * This is the main decryption function
+     *
+     * @param cipherText is the cipher text that has to be decrypted
+     * @param plainKey is the key with which plainText has to be decrypted
+     * @return Returns the decrypted String
+     * @throws Exception
+     */
+    private static String decrypt(String cipherText, String plainKey) throws Exception {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        IvParameterSpec ivSpec;
+        Key cipherKey = Utils.createKeyForAES(256, plainKey);
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
+
+        String split[] = cipherText.split(":");
+        ivSpec = new IvParameterSpec(Utils.base64Decrypt(split[0]));
+        byte[] cipherBytes = Utils.base64Decrypt(split[1]);
+
+        // decryption step starts here
+        cipher.init(Cipher.DECRYPT_MODE, cipherKey, ivSpec);
+        int ctLength = cipherBytes.length;
+        byte[] plainText = new byte[cipher.getOutputSize(ctLength)];
+        int ptLength = cipher.update(cipherBytes, 0, ctLength, plainText, 0);
+        ptLength += cipher.doFinal(plainText, ptLength);
+
+        return Utils.toString(plainText);
+    }
+    private static final String SHA_HMAC_ALGORITHM = "HMACSHA256";
+    private static byte[] abDigest = null;
+    private static String szResult = null;
+    private static String result = null;
+    private static Mac shaMac = null;
+    private static SecretKeySpec secretKeySpec = null;
+
+    /**
+     * Generate hash of the input byte array Current Algorithm is HMACSHA256
+     *
+     * @param inBuffer Takes the bytes that have to be hashed
+     * @param hmacKey Key for calculating HMAC
+     * @return Returns the HMAC string
+     */
+    public static String genHash(byte[] inBuffer, String hmacKey) {
+        try {
+            result = calcSHAHMAC(inBuffer, hmacKey);
+        } catch (SignatureException e) {
+            System.err.println("genHash(): Signature Exception");
+            result = null;
+        }
+        return result;
+    }
+
+    /**
+     * Actual method that generates a hash of the input byte array and returns
+     * the Base64 encoded hash string
+     *
+     * @param inputMsg message whose HMAC has to be calculated
+     * @param hmacKey Key
+     * @return returns the HMAC as String
+     * @throws java.security.SignatureException
+     */
+    private static String calcSHAHMAC(byte[] inputMsg, String hmacKey)
+            throws java.security.SignatureException {
+        BASE64Encoder base64Encoder = new BASE64Encoder();
+        try {
+            shaMac = Mac.getInstance(SHA_HMAC_ALGORITHM);
+            secretKeySpec = new SecretKeySpec(hmacKey.getBytes(), SHA_HMAC_ALGORITHM);
+            shaMac.init(secretKeySpec);
+            abDigest = shaMac.doFinal(inputMsg);
+            // convert raw HMAC into Base64
+            szResult = base64Encoder.encode(abDigest);
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println(SHA_HMAC_ALGORITHM + ": no such algorithm!");
+            szResult = null;
+        } catch (InvalidKeyException e) {
+            System.out.println("Invalid key!");
+            szResult = null;
+        }
+        return szResult;
+    }
+}

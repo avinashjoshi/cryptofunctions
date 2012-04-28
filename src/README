@@ -1,0 +1,19 @@
+This is a sample code to show how hmac and AES encryption work
+
+Logic: CipherText = IV:E_k1{M|HMAC_k2{M}}
+     Encryption Scheme is AES with CTR mode
+     HMAC uses HMAC-SHA-256
+
+key = "some plain text"
+keyHash = SHA256(key)
+k1 = keyHash[0-127] & k2 = keyHash[128-255]
+
+Sample OUTPUT:
+
+Cipher Text
+=======================================================
+AAAAAU412RcAAAAAAAAAAQ==:Eo3/DHPIa8qrne8TKXYlbAFnoRrkRpu+7Ov5qRME4JuNfQIUKr6ZUtnn+HcD7EBBhtsEHYAEi5zO
+piNUihJ27H184uFZ+J4=
+Plain Text
+=======================================================
+Previously encrypted text - to test this scheme
