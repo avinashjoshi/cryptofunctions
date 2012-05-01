@@ -1,5 +1,9 @@
 
+import java.io.UnsupportedEncodingException;
 import java.security.*;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
@@ -8,7 +12,7 @@ import sun.misc.BASE64Encoder;
 
 /**
  * This class has all Crypto tools needed by the application.
- * 
+ *
  * @author Avinash Joshi <avinash.joshi@utdallas.edu>
  */
 public class Crypto {
@@ -24,31 +28,45 @@ public class Crypto {
      * @throws NoSuchAlgorithmException
      * @throws Exception
      */
-    public static String doEncryptDecrypt(String receivedText, String key, char mode) throws NoSuchAlgorithmException, Exception {
-        String keyHash = Utils.SHA256String(key);
-        String aesKey = keyHash.substring(0, keyHash.length() / 2);
-        String hmacKey = keyHash.substring(keyHash.length() / 2);
-        StringBuilder encText = new StringBuilder();
-        String returnString = null;
+    public static ArrayList<String> doEncryptDecrypt(String receivedText, String key, char mode) {
+        ArrayList<String> returnString = new ArrayList();
+        try {
+            String keyHash = Utils.SHA256String(key);
+            String aesKey = keyHash.substring(0, keyHash.length() / 2);
+            String hmacKey = keyHash.substring(keyHash.length() / 2);
+            StringBuilder encText = new StringBuilder();
 
-        if (mode == 'E') {
-            String hash = Crypto.genHash(receivedText.getBytes("ASCII"), hmacKey);
-            encText.append(receivedText);
-            encText.append(hash);
-            returnString = encrypt(encText.toString(), aesKey);
-        } else if (mode == 'D') {
-            String decText = decrypt(receivedText, aesKey);
-            String oldHash = decText.substring(decText.length() - 44, decText.length());
-            String plainText = decText.substring(0, decText.length() - 44);
-            String newHash = Crypto.genHash(plainText.getBytes("ASCII"), hmacKey);
+            if (mode == 'E') {
+                String hash = Crypto.genHash(receivedText.getBytes("ASCII"), hmacKey);
+                encText.append(receivedText);
+                encText.append(hash);
+                returnString.add(0, "ENCRYPTED");
+                returnString.add(1, encrypt(encText.toString(), aesKey));
+            } else if (mode == 'D') {
+                String decText = decrypt(receivedText, aesKey);
+                String oldHash = decText.substring(decText.length() - 44, decText.length());
+                String plainText = decText.substring(0, decText.length() - 44);
+                String newHash = Crypto.genHash(plainText.getBytes("ASCII"), hmacKey);
 
-            if (oldHash.equals(newHash)) {
-                //System.out.println("Hash verified");
-                returnString = plainText;
-            } else {
-                //System.out.println("Hash not verified");
-                returnString = null;
+                if (oldHash.equals(newHash)) {
+                    //System.out.println("Hash verified");
+                    returnString.add(0, "DECRYPTED");
+                    returnString.add(1, plainText);
+                } else {
+                    //System.out.println("Hash not verified");
+                    returnString.add(0, "FAILED");
+                    returnString.add(1, "The message has been compromised!");
+                }
             }
+        } catch (UnsupportedEncodingException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, ex.getMessage());
+        } catch (NoSuchAlgorithmException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, ex.getMessage());
+        } catch (Exception ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, ex.getMessage());
         }
         return returnString;
     }

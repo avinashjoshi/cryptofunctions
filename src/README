@@ -21,3 +21,9 @@ piNUihJ27H184uFZ+J4=
 Plain Text
 =======================================================
 Previously encrypted text - to test this scheme
+
+
+Secure Random
+http://docs.oracle.com/javase/6/docs/api/java/security/SecureRandom.html
+http://csrc.nist.gov/groups/STM/index.html
+http://www.ietf.org/rfc/rfc1750.txt
