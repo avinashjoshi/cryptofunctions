@@ -2,10 +2,7 @@
 import java.io.UnsupportedEncodingException;
 import java.security.*;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import sun.misc.BASE64Encoder;
@@ -58,6 +55,27 @@ public class Crypto {
                     returnString.add(1, "The message has been compromised!");
                 }
             }
+        } catch (IllegalBlockSizeException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (BadPaddingException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (ShortBufferException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (InvalidAlgorithmParameterException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (NoSuchProviderException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (NoSuchPaddingException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (InvalidKeyException ex) {
+            returnString.add(0, "INVALID_KEY");
+            returnString.add(1, "Invalid key!");
         } catch (UnsupportedEncodingException ex) {
             returnString.add(0, "FAILED");
             returnString.add(1, ex.getMessage());
@@ -115,23 +133,43 @@ public class Crypto {
      * @return Returns the decrypted String
      * @throws Exception
      */
-    private static String decrypt(String cipherText, String plainKey) throws Exception {
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-        IvParameterSpec ivSpec;
-        Key cipherKey = Utils.createKeyForAES(256, plainKey);
-        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
+    private static String decrypt(String cipherText, String plainKey) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, ShortBufferException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException {
+        byte[] plainText = null;
+        try {
+            Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+            IvParameterSpec ivSpec;
+            Key cipherKey = Utils.createKeyForAES(256, plainKey);
+            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
 
-        String split[] = cipherText.split(":");
-        ivSpec = new IvParameterSpec(Utils.base64Decrypt(split[0]));
-        byte[] cipherBytes = Utils.base64Decrypt(split[1]);
+            String split[] = cipherText.split(":");
+            ivSpec = new IvParameterSpec(Utils.base64Decrypt(split[0]));
+            byte[] cipherBytes = Utils.base64Decrypt(split[1]);
 
-        // decryption step starts here
-        cipher.init(Cipher.DECRYPT_MODE, cipherKey, ivSpec);
-        int ctLength = cipherBytes.length;
-        byte[] plainText = new byte[cipher.getOutputSize(ctLength)];
-        int ptLength = cipher.update(cipherBytes, 0, ctLength, plainText, 0);
-        ptLength += cipher.doFinal(plainText, ptLength);
+            // decryption step starts here
+            cipher.init(Cipher.DECRYPT_MODE, cipherKey, ivSpec);
+            int ctLength = cipherBytes.length;
+            plainText = new byte[cipher.getOutputSize(ctLength)];
+            int ptLength = cipher.update(cipherBytes, 0, ctLength, plainText, 0);
+            ptLength += cipher.doFinal(plainText, ptLength);
 
+            
+        } catch (IllegalBlockSizeException ex) {
+            throw ex;
+        } catch (BadPaddingException ex) {
+            throw ex;
+        } catch (ShortBufferException ex) {
+            throw ex;
+        } catch (InvalidKeyException ex) {
+            throw ex;
+        } catch (InvalidAlgorithmParameterException ex) {
+            throw ex;
+        } catch (NoSuchAlgorithmException ex) {
+            throw ex;
+        } catch (NoSuchProviderException ex) {
+            throw ex;
+        } catch (NoSuchPaddingException ex) {
+            throw ex;
+        }
         return Utils.toString(plainText);
     }
     private static final String SHA_HMAC_ALGORITHM = "HMACSHA256";
