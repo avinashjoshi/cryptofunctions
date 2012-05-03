@@ -4,8 +4,6 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.Cipher;
 
 public class RSA {
@@ -86,7 +84,6 @@ public class RSA {
             writeKeyToFile(stringToFile.toString(), fileName + ".priv");
 
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -97,7 +94,6 @@ public class RSA {
             byte[] input = inputText.getBytes();
             PublicKey publicKey = getPublicKey(keyFile);
         } catch (Exception ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         }
         return encryptedText;
     }
@@ -113,14 +109,11 @@ public class RSA {
             dos.close();
             returnValue = true;
         } catch (FileNotFoundException ex) {
-            //Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            //Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
                 fos.close();
             } catch (IOException ex) {
-                //Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return returnValue;
@@ -150,11 +143,8 @@ public class RSA {
             publicKey = kf.generatePublic(keySpec);
 
         } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         }
         return publicKey;
     }
@@ -183,11 +173,8 @@ public class RSA {
             privateKey = kf.generatePrivate(keySpec);
 
         } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(BasicRSA.class.getName()).log(Level.SEVERE, null, ex);
         }
         return privateKey;
     }
