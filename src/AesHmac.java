@@ -12,7 +12,7 @@ import sun.misc.BASE64Encoder;
  *
  * @author Avinash Joshi <avinash.joshi@utdallas.edu>
  */
-public class Crypto {
+public class AesHmac {
 
     /**
      * This is the main function being called
@@ -34,7 +34,7 @@ public class Crypto {
             StringBuilder encText = new StringBuilder();
 
             if (mode == 'E') {
-                String hash = Crypto.genHash(receivedText.getBytes("ASCII"), hmacKey);
+                String hash = AesHmac.genHash(receivedText.getBytes("ASCII"), hmacKey);
                 encText.append(receivedText);
                 encText.append(hash);
                 returnString.add(0, "ENCRYPTED");
@@ -43,7 +43,7 @@ public class Crypto {
                 String decText = decrypt(receivedText, aesKey);
                 String oldHash = decText.substring(decText.length() - 44, decText.length());
                 String plainText = decText.substring(0, decText.length() - 44);
-                String newHash = Crypto.genHash(plainText.getBytes("ASCII"), hmacKey);
+                String newHash = AesHmac.genHash(plainText.getBytes("ASCII"), hmacKey);
 
                 if (oldHash.equals(newHash)) {
                     //System.out.println("Hash verified");

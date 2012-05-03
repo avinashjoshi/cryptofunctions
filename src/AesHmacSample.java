@@ -17,13 +17,13 @@ import java.util.ArrayList;
  * 
  * @author Avinash Joshi <avinash.joshi@utdallas.edu>
  */
-public class AES_HMAC {
+public class AesHmacSample {
 
     public static void main(String[] args) throws Exception {
         ArrayList<String> returned = new ArrayList<String>();
         String key = "password_goes_here";
         String cipher;
-        returned = Crypto.doEncryptDecrypt("This text will be encrypted", key, 'E');
+        returned = AesHmac.doEncryptDecrypt("This text will be encrypted", key, 'E');
         cipher = returned.get(1);
         System.out.println("Cipher Text");
         System.out.println("=======================================================");
@@ -31,7 +31,7 @@ public class AES_HMAC {
         
         cipher = "AAAAASwkDqYAAAAAAAAAAQ==:7ILt9UfRUiuY8fyQlRuItt0+fCSUi6FaJmlfGvWgbKq+j5TH8ng03L5sIeskSwu3qwOdMYWVQ84wfSMV98yWNNlNLTfced9R4KaAcX/WO0Tch3f+7Jf1GpXzpw==";
 
-        returned = Crypto.doEncryptDecrypt(cipher, key, 'D');
+        returned = AesHmac.doEncryptDecrypt(cipher, key, 'D');
         System.out.println("Plain Text");
         System.out.println("=======================================================");
         System.out.println(returned.get(0) + ": " + returned.get(1));
