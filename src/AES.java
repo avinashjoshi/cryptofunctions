@@ -12,7 +12,7 @@ import sun.misc.BASE64Encoder;
  *
  * @author Avinash Joshi <avinash.joshi@utdallas.edu>
  */
-public class AesHmac {
+public class AES {
 
     /**
      * This is the main function being called
@@ -25,7 +25,7 @@ public class AesHmac {
      * @throws NoSuchAlgorithmException
      * @throws Exception
      */
-    public static ArrayList<String> doEncryptDecrypt(String receivedText, String key, char mode) {
+    public static ArrayList<String> doEncryptDecryptHMAC(String receivedText, String key, char mode) {
         ArrayList<String> returnString = new ArrayList();
         try {
             String keyHash = Utils.SHA256String(key);
@@ -34,7 +34,7 @@ public class AesHmac {
             StringBuilder encText = new StringBuilder();
 
             if (mode == 'E') {
-                String hash = AesHmac.genHash(receivedText.getBytes("ASCII"), hmacKey);
+                String hash = AES.genHash(receivedText.getBytes("ASCII"), hmacKey);
                 encText.append(receivedText);
                 encText.append(hash);
                 returnString.add(0, "ENCRYPTED");
@@ -43,7 +43,7 @@ public class AesHmac {
                 String decText = decrypt(receivedText, aesKey);
                 String oldHash = decText.substring(decText.length() - 44, decText.length());
                 String plainText = decText.substring(0, decText.length() - 44);
-                String newHash = AesHmac.genHash(plainText.getBytes("ASCII"), hmacKey);
+                String newHash = AES.genHash(plainText.getBytes("ASCII"), hmacKey);
 
                 if (oldHash.equals(newHash)) {
                     //System.out.println("Hash verified");
@@ -54,6 +54,55 @@ public class AesHmac {
                     returnString.add(0, "FAILED");
                     returnString.add(1, "The message has been compromised!");
                 }
+            }
+        } catch (IllegalBlockSizeException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (BadPaddingException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (ShortBufferException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (InvalidAlgorithmParameterException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (NoSuchProviderException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (NoSuchPaddingException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, "Some Exception");
+        } catch (InvalidKeyException ex) {
+            returnString.add(0, "INVALID_KEY");
+            returnString.add(1, "Invalid key!");
+        } catch (UnsupportedEncodingException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, ex.getMessage());
+        } catch (NoSuchAlgorithmException ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, ex.getMessage());
+        } catch (Exception ex) {
+            returnString.add(0, "FAILED");
+            returnString.add(1, ex.getMessage());
+        }
+        return returnString;
+    }
+
+    public static ArrayList<String> doEncryptDecrypt(String receivedText, String key, char mode) {
+        ArrayList<String> returnString = new ArrayList();
+        try {
+            String keyHash = Utils.SHA256String(key);
+            StringBuilder encText = new StringBuilder();
+
+            if (mode == 'E') {
+                encText.append(receivedText);
+                returnString.add(0, "ENCRYPTED");
+                returnString.add(1, encrypt(encText.toString(), keyHash));
+            } else if (mode == 'D') {
+                String decText = decrypt(receivedText, keyHash);
+                returnString.add(0, "DECRYPTED");
+                returnString.add(1, decText);
             }
         } catch (IllegalBlockSizeException ex) {
             returnString.add(0, "FAILED");
@@ -122,7 +171,7 @@ public class AesHmac {
          */
         finalCipherB64 = Utils.base64Encrypt(ivSpec.getIV()) + ":" + Utils.base64Encrypt(cipherText);
 
-        return finalCipherB64;
+        return Utils.base64Encrypt(finalCipherB64);
     }
 
     /**
@@ -141,6 +190,8 @@ public class AesHmac {
             Key cipherKey = Utils.createKeyForAES(256, plainKey);
             Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
 
+            byte[] cipherByte = Utils.base64Decrypt(cipherText);
+            cipherText = Utils.toString(cipherByte);
             String split[] = cipherText.split(":");
             ivSpec = new IvParameterSpec(Utils.base64Decrypt(split[0]));
             byte[] cipherBytes = Utils.base64Decrypt(split[1]);
@@ -152,7 +203,7 @@ public class AesHmac {
             int ptLength = cipher.update(cipherBytes, 0, ctLength, plainText, 0);
             ptLength += cipher.doFinal(plainText, ptLength);
 
-            
+
         } catch (IllegalBlockSizeException ex) {
             throw ex;
         } catch (BadPaddingException ex) {
